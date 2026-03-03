@@ -342,8 +342,12 @@
     <div class="btn-row">
       <div class="spinner" id="gen-spinner"></div>
       <button class="btn-icon" onclick="loadComposerSample()">📋 Load Sample Data</button>
-      <div class="field" style="margin:0;">
-        <input type="password" id="comp-apikey" placeholder="Claude API Key (sk-ant-...)" style="width:240px;" oninput="localStorage.setItem('radar_apikey',this.value)">
+      <div class="field" style="margin:0;display:flex;gap:8px;align-items:center;">
+        <select id="comp-provider" style="width:140px;padding:8px 10px;font-size:13px;" onchange="localStorage.setItem('radar_provider',this.value);updateRadarProvider()">
+          <option value="anthropic">Claude</option>
+          <option value="openai">OpenAI</option>
+        </select>
+        <input type="password" id="comp-apikey" placeholder="API Key (sk-ant-... or sk-...)" style="width:220px;" oninput="localStorage.setItem('radar_apikey',this.value)">
       </div>
     </div>
   </div>
@@ -517,24 +521,42 @@ QUICK WINS NOTES: ${document.getElementById('quick-wins').value || 'None'}`;
   return { system, user };
 }
 
-async function generateIssue() {
-  const apiKey = localStorage.getItem('radar_apikey') || document.getElementById('comp-apikey').value;
-  if (!apiKey) { showCompErr('Enter your Claude API key in the header.'); return; }
+function updateRadarProvider() {
+  const p = localStorage.getItem('radar_provider') || 'anthropic';
+  document.getElementById('comp-provider').value = p;
+  document.getElementById('comp-apikey').placeholder = p === 'openai' ? 'sk-...' : 'sk-ant-...';
+}
 
+async function callRadarAI(system, user) {
+  const key = localStorage.getItem('radar_apikey') || document.getElementById('comp-apikey').value;
+  const provider = localStorage.getItem('radar_provider') || 'anthropic';
+  if (!key) throw new Error('Enter your API key in the header bar.');
+  if (provider === 'openai') {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST', headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'gpt-4o',max_tokens:2000,messages:[{role:'system',content:system},{role:'user',content:user}]})
+    });
+    if (!r.ok) { const e=await r.json(); throw new Error(e.error?.message||r.status); }
+    return (await r.json()).choices[0].message.content;
+  } else {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2000,system,messages:[{role:'user',content:user}]})
+    });
+    if (!r.ok) { const e=await r.json(); throw new Error(e.error?.message||r.status); }
+    return (await r.json()).content[0].text;
+  }
+}
+
+async function generateIssue() {
   document.getElementById('gen-spinner').classList.add('show');
   document.getElementById('gen-btn').disabled = true;
   document.getElementById('comp-error').style.display = 'none';
 
   try {
     const { system, user } = buildIssuePrompt();
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 2000, system, messages: [{ role: 'user', content: user }] })
-    });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.error?.message || r.status); }
-    const data = await r.json();
-    renderIssue(data.content[0].text);
+    const text = await callRadarAI(system, user);
+    renderIssue(text);
   } catch(e) { showCompErr('Error: ' + e.message); }
   finally { document.getElementById('gen-spinner').classList.remove('show'); document.getElementById('gen-btn').disabled = false; }
 }
@@ -612,6 +634,9 @@ function loadComposerSample() {
   ['nab-chg-disp','mac-chg-disp'].forEach((id,i) => updateChange(id, i===0?0.05:-0.10));
 }
 setDefaultDate();
+updateRadarProvider();
+document.getElementById('comp-apikey').value = localStorage.getItem('radar_apikey') || '';
+document.getElementById('comp-provider').value = localStorage.getItem('radar_provider') || 'anthropic';
 </script>
 </body>
 </html>
