@@ -371,7 +371,7 @@
       </div>
       <div id="sub-thanks">You're in! First issue lands next Monday.</div>
     </div>
-    <div class="social-proof">Join <strong>Accountants &middot; Mortgage Brokers &middot; Buyers Agents &middot; Finance Advisors</strong></div>
+    <div class="social-proof">Built for <strong>borrowers &middot; business owners &middot; finance professionals &middot; advisers</strong></div>
   </div>
 
   <div class="section">
@@ -855,7 +855,7 @@ function buildIssuePrompt() {
   const rateLines = banks.map(b => '  ' + b.name + ': Variable ' + (b.var || 'N/A') + '%, 3yr Fixed ' + (b.fix || 'N/A') + '%, Week change: ' + fmtChg(b.chg)).join('\n');
   const nonbankLines = nonbank.filter(n => n.var).map(n => '  ' + n.name + ': Variable ' + n.var + '%, ' + (n.spec || '—') + ', Week change: ' + fmtChg(n.chg)).join('\n');
 
-  const system = 'You are the editor of "Lender Rate Radar", a weekly newsletter for Australian mortgage brokers, accountants, and financial advisors. Written by a former 8-year Big Four banker.\n\nWrite a complete, polished newsletter issue. Tone: sharp, expert, direct. No waffle.\n\nStructure:\n1. HEADLINE HOOK (2-3 sentences)\n2. RATE TABLE (describe key movers — no HTML)\n3. NON-BANK MOVERS (who moved and why)\n4. RBA WATCH (implications for fixed vs variable)\n5. EXPERT INSIGHT (200 words — specific, actionable, insider perspective)\n6. POLICY ALERTS (if provided)\n7. QUICK WINS (2-3 bullet point actions)\n8. SIGN-OFF\n\nWrite in markdown. Australian English. Use ## for section headers.';
+  const system = 'You are the editor of "Lender Rate Radar", a weekly Australian lending-rate intelligence newsletter for borrowers, business owners and finance professionals. Written by a former 8-year Big Four banker.\n\nWrite a complete, polished newsletter issue. Tone: sharp, expert, direct. No waffle.\n\nStructure:\n1. HEADLINE HOOK (2-3 sentences)\n2. RATE TABLE (describe key movers — no HTML)\n3. NON-BANK MOVERS (who moved and why)\n4. RBA WATCH (implications for fixed vs variable)\n5. EXPERT INSIGHT (200 words — specific, actionable, insider perspective)\n6. POLICY ALERTS (if provided)\n7. QUICK WINS (2-3 bullet point actions)\n8. SIGN-OFF\n\nWrite in markdown. Australian English. Use ## for section headers.';
 
   const user = 'ISSUE #' + (document.getElementById('issue-num').value || '?') + ' — Week of ' + (document.getElementById('issue-week').value || 'TBC') +
     '\n\nHEADLINE: ' + (document.getElementById('headline').value || 'General weekly update') +
