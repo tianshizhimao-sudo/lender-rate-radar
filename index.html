@@ -345,10 +345,7 @@
     <div class="nav-badge">by Oney & Co</div>
   </a>
   <div class="nav-right">
-    <button class="nav-tab active" onclick="showPage('landing')">Home</button>
-    <button class="nav-tab" onclick="showPage('composer')">Composer</button>
-    <button class="nav-tab" onclick="showPage('recommend')">Lender Match</button>
-    <button class="nav-tab" onclick="showPage('database')">LVR Database</button>
+    <button class="nav-tab active" onclick="showPage('landing', this)">Home</button>
     <div class="theme-switcher" role="radiogroup" aria-label="Theme">
       <div class="theme-dot active" data-theme="dark" data-tooltip="Dark" role="radio" aria-checked="true"></div>
       <div class="theme-dot" data-theme="purple" data-tooltip="Purple" role="radio" aria-checked="false"></div>
@@ -382,7 +379,7 @@
       <div class="feature-card"><div class="feature-icon blue">&#x1F9E0;</div><h3>Expert Insight</h3><p>One 200-word insight each week from a former Big 4 credit analyst on what these rate moves mean in practice.</p></div>
       <div class="feature-card"><div class="feature-icon green">&#x1F4CA;</div><h3>RBA Tracker</h3><p>Cash rate, next meeting date, market probability of change, and implications for variable vs fixed strategy.</p></div>
       <div class="feature-card"><div class="feature-icon amber">&#x26A1;</div><h3>Policy Alerts</h3><p>LVR changes, credit policy tightening, lender appetite shifts. Know before your clients ask.</p></div>
-      <div class="feature-card"><div class="feature-icon purple">&#x1F4CC;</div><h3>Lender Tier Match</h3><p>NEW: Get personalised lender tier recommendations based on LVR, loan size, and borrower profile — powered by our database.</p></div>
+      <div class="feature-card"><div class="feature-icon purple">&#x1F4CC;</div><h3>Policy Context</h3><p>Track material lender policy movements alongside rate changes, with source context and verification status.</p></div>
     </div>
 
     <div class="sample-issue">
@@ -451,7 +448,7 @@
 </div>
 
 <!-- ===== COMPOSER ===== -->
-<div id="page-composer" class="page">
+<div id="page-composer" class="page" hidden aria-hidden="true">
   <div class="composer-main">
     <div class="composer-toolbar">
       <div class="toolbar-left">
@@ -552,7 +549,7 @@
 </div>
 
 <!-- ===== LENDER MATCH (Tier Recommendation Engine) ===== -->
-<div id="page-recommend" class="page">
+<div id="page-recommend" class="page" hidden aria-hidden="true">
   <div class="composer-main">
     <div class="composer-toolbar">
       <h2 style="font-size:16px;font-weight:700;">Lender Tier Recommendation Engine</h2>
@@ -640,7 +637,7 @@
 </div>
 
 <!-- ===== LVR DATABASE ===== -->
-<div id="page-database" class="page">
+<div id="page-database" class="page" hidden aria-hidden="true">
   <div class="composer-main">
     <div class="composer-toolbar">
       <div class="toolbar-left">
@@ -698,6 +695,12 @@ const SUPABASE_URL = 'https://syhwaeloljdswsmqkzrx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5aHdhZWxvbGpkc3dzbXFrenJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMDI0NjksImV4cCI6MjA4NTY3ODQ2OX0.wWe9fnjMe0d7PbXfF5s9hdY6rXHB4rCAbMzXhgbyTE8';
 const SUPABASE_HEADERS = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
 
+/* ── PUBLIC-SURFACE SAFETY ───────────────────────────
+   Internal composer/database/recommendation UI is retained in source for
+   future staff-gated use, but is not a public release surface. Remove any
+   legacy BYO model credential previously stored by older public builds. */
+try { localStorage.removeItem('radar_apikey'); } catch (_) {}
+
 /* ── STATE ─────────────────────────── */
 let currentPage = 'landing';
 let residentialData = []; // from v_lender_summary
@@ -705,15 +708,19 @@ let commercialData = [];  // from v_commercial_summary
 let supabaseConnected = false;
 
 /* ── PAGE NAVIGATION ──────────────── */
-function showPage(page) {
+const PUBLIC_PAGES = new Set(['landing']);
+
+function showPage(page, trigger) {
+  if (!PUBLIC_PAGES.has(page)) {
+    console.warn('Blocked non-public Rate Radar surface:', page);
+    page = 'landing';
+  }
   currentPage = page;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
+  const target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
-  if (page === 'database') loadLvrData();
-  if (page === 'recommend' && !supabaseConnected) testSupabaseConnection();
-  if (page === 'composer') { loadComposerConfig(); }
+  if (trigger) trigger.classList.add('active');
 }
 
 function switchPreviewTab(tab, btn) {
